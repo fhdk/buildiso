@@ -1,4 +1,4 @@
-name: 'Manjaro Iso Action'
+name: 'Build Iso Action'
 description: 'Installs prerequisites for building Manjaro on ubuntu'
 
 inputs:
