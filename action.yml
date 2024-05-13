@@ -36,23 +36,26 @@ inputs:
   disable-multilib:
     description: 'disable multilib'
     required: false
+    default: 'true'
   dist-name:
     description: 'distribution name  (upstream if not given)'
     required: false
+    default: 'nix.dk'
   iso-name:
     description: 'iso name  (upstream if not given)'
     required: false
+    default: 'nix'
   custom-repo:
     description: 'name a custom repo to be prioritized above the default ones'
     required: false
   office-chooser:
     description: 'include calamares office installer module'
     required: false
-    default: "false"
+    default: 'false'
   build-mirror:
     description: 'specific build mirror to use'
     required: false
-    default: https://mirror.easyname.at/manjaro
+    default: 'https://mirror.easyname.at/manjaro'
   gpg-secret-key-base64:
     description: 'base64 encoded gpg secret key (without a passphrase) to sign the zip (if set)'
     required: false
