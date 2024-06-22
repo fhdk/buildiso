@@ -248,7 +248,7 @@ runs:
         [ "$SCOPE" == "minimal" ] && unset SCOPE && unset OFFICE
         [ "$OFFICE" == "false" ] && unset OFFICE
         echo "ource the version info from current release info"
-        _source <(curl -s https://gitlab.manjaro.org/packages/core/manjaro-release/-/raw/master/lsb-release)
+        source <(curl -s https://gitlab.manjaro.org/packages/core/manjaro-release/-/raw/master/lsb-release)
         sudo sed -i -e "s|dist_name=\$(get_distname)|dist_name=\"${DIST_NAME:-DISTRIB_ID%Linux}\"|g" /usr/lib/manjaro-tools/util.sh
         sudo sed -i -e "s|iso_name=\$(get_osid)|iso_name=\"${ISO_NAME:-manjaro}\"|g" /usr/lib/manjaro-tools/util.sh
         sudo sed -i -e "s|dist_release=\$(get_release)|dist_release=\"${VERSION:-$DISTRIB_RELEASE}\"|g" /usr/lib/manjaro-tools/util.sh
