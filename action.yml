@@ -149,7 +149,6 @@ runs:
       shell: bash
       run: |
         sudo install -dm755 /usr/share/pacman/keyrings/
-
         sudo git clone --depth 1 https://gitlab.manjaro.org/packages/core/manjaro-keyring.git
         pushd manjaro-keyring
           sudo install -m0644 manjaro.gpg /usr/share/pacman/keyrings/
@@ -183,13 +182,11 @@ runs:
         sudo make -C arch-install-scripts-${VERSION}
         sudo make -C arch-install-scripts-${VERSION} check
         sudo make -C arch-install-scripts-${VERSION} PREFIX=/usr install
-        
         sudo wget https://gitlab.manjaro.org/applications/pacman-mirrors/-/tree/master/data/etc/pacman-mirrors.conf -O /etc/pacman-mirrors.conf
     - id: install-calamares-tools
       shell: bash
       run: |
         sudo git clone --depth 1 https://gitlab.manjaro.org/applications/calamares-tools.git
-        
         cd calamares-tools
         sudo install -d /usr/share/calamares/
         sudo cp -rv schemas/ /usr/share/calamares/
@@ -250,27 +247,20 @@ runs:
         echo "## building iso"
         [ "$SCOPE" == "minimal" ] && unset SCOPE && unset OFFICE
         [ "$OFFICE" == "false" ] && unset OFFICE
-
-        # source the version info from current release info
-        source <(curl -s https://gitlab.manjaro.org/packages/core/manjaro-release/-/raw/master/lsb-release)
-
-        echo  sed -i -e "s|dist_name=\$(get_distname)|dist_name=\"${DIST_NAME:-DISTRIB_ID%Linux}\"|g" /usr/lib/manjaro-tools/util.sh
-        echo  sed -i -e "s|iso_name=\$(get_osid)|iso_name=\"${ISO_NAME:-manjaro}\"|g" /usr/lib/manjaro-tools/util.sh
-        echo  sed -i -e "s|dist_release=\$(get_release)|dist_release=\"${VERSION:-$DISTRIB_RELEASE}\"|g" /usr/lib/manjaro-tools/util.sh
-        echo  sed -i -e "s|dist_codename=\$(get_codename)|dist_codename=\"${CODE_NAME:-$DISTRIB_CODENAME}\"|g" /usr/lib/manjaro-tools/util.sh
-        echo  sed -i -e "s|dist_branding=\"MANJARO\"|dist_branding=\"${DIST_BRANDING:-MANJARO}\"|g" /usr/lib/manjaro-tools/util.sh
-
+        echo "ource the version info from current release info"
+        _source <(curl -s https://gitlab.manjaro.org/packages/core/manjaro-release/-/raw/master/lsb-release)
+        sudo sed -i -e "s|dist_name=\$(get_distname)|dist_name=\"${DIST_NAME:-DISTRIB_ID%Linux}\"|g" /usr/lib/manjaro-tools/util.sh
+        sudo sed -i -e "s|iso_name=\$(get_osid)|iso_name=\"${ISO_NAME:-manjaro}\"|g" /usr/lib/manjaro-tools/util.sh
+        sudo sed -i -e "s|dist_release=\$(get_release)|dist_release=\"${VERSION:-$DISTRIB_RELEASE}\"|g" /usr/lib/manjaro-tools/util.sh
+        sudo sed -i -e "s|dist_codename=\$(get_codename)|dist_codename=\"${CODE_NAME:-$DISTRIB_CODENAME}\"|g" /usr/lib/manjaro-tools/util.sh
+        sudo sed -i -e "s|dist_branding=\"MANJARO\"|dist_branding=\"${DIST_BRANDING:-MANJARO}\"|g" /usr/lib/manjaro-tools/util.sh
         sudo sed -i -e "s|build_mirror='https://mirror.easyname.at/manjaro'|build_mirror=\'${BUILD_MIRROR}\'|g" /usr/lib/manjaro-tools/util.sh
-        
         sudo buildiso ${SCOPE:+-f} -p $EDITION -b $BRANCH -k $KERNEL ${OFFICE:+-o} ${DISABLE_MULTILIB:+-n}
-
         sudo rm -Rf /var/lib/manjaro-tools/buildiso/*
-        
         OUTPUT_ISO_PATH=$(find /var/cache/manjaro-tools/iso -type f -name "*.iso" -exec stat -c '%Y %n' {} \; | sort -nr | awk 'NR==1 {print $2}')
         TARGET_ISO_PATH=$(basename $OUTPUT_ISO_PATH)
         mv $OUTPUT_ISO_PATH ./$TARGET_ISO_PATH
         echo "file-path=$TARGET_ISO_PATH" >> $GITHUB_OUTPUT
-
         FILE_PKG=$(find /var/cache/manjaro-tools/iso -type f -name "*-pkgs.txt" -exec stat -c '%Y %n' {} \; | sort -nr | awk 'NR==1 {print $2}')
         mv $FILE_PKG ./${TARGET_ISO_PATH}.pkgs
     - id: hash
@@ -284,7 +274,7 @@ runs:
       shell: bash
       run: |
         # if is not yet supported in composite https://github.com/actions/runner/blob/main/docs/adrs/0549-composite-run-steps.md#if-condition
-        if [ -z "${{ inputs.gpg-secret-key-base64 }}" ]; then 
+        if [ -z "${{ inputs.gpg-secret-key-base64 }}" ]; then
           echo "## no gpg secret given"
           exit 0
         fi
@@ -307,25 +297,20 @@ runs:
         LIMIT_MB: '2000'
       run: |
         # if is not yet supported in composite https://github.com/actions/runner/blob/main/docs/adrs/0549-composite-run-steps.md#if-condition
-        if [ -z "${{ inputs.release-tag }}" ]; then 
+        if [ -z "${{ inputs.release-tag }}" ]; then
           echo "## no release tag given"
           exit 0
         fi
         echo "## github upload"
-
         echo ${{ github.token }} | gh auth login --with-token
         gh release create ${{ inputs.release-tag }} --title ${{ inputs.release-tag }} --repo ${{ github.repository }} --notes "automated release" || echo "release already exists"
-
         GITHUB_LINK=https://github.com/${GITHUB_REPOSITORY}/releases/${{ inputs.release-tag }}
-
         if [[ -z "$(du --threshold=${LIMIT_MB}M ${{ steps.image-build.outputs.file-path }})" ]]; then
           # iso is small enough to upload already
           gh release upload ${{ inputs.release-tag }} --repo ${{ github.repository }} --clobber \
             ${{ steps.upload-prepare.outputs.upload-files }}
         else
-          # iso is too big - creating a split-zip
           zip -j -s ${LIMIT_MB}m ${{ steps.image-build.outputs.file-path }}.zip ${{ steps.image-build.outputs.file-path }}
-          
           REMOTE_FILES=$(find . -maxdepth 1 -name "*.z*" -exec basename {} \; | xargs -I{} echo "-w \"${GITHUB_LINK}/{}\"")
           gh release upload ${{ inputs.release-tag }} --repo ${{ github.repository }} --clobber \
             ./${{ steps.image-build.outputs.file-path }}+(.z*|.sha*|.pkgs|.sig|.torrent)
