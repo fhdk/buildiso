@@ -20,16 +20,10 @@ inputs:
     description: 'full (default) or minimal image'
     required: false
     default: full
-  version:
-    description: 'dist_release version (upstream if not given)'
-    required: false
   kernel:
     description: 'kernel version'
     required: false
     default: linux66
-  code-name:
-    description: 'code-name (upstream if not given)'
-    required: false
   release-tag:
     description: 'release tag to upload to (if set)'
     required: false
@@ -37,6 +31,12 @@ inputs:
     description: 'disable multilib'
     required: false
     default: 'true'
+  version:
+    description: 'dist_release version (upstream if not given)'
+    required: false
+  code-name:
+    description: 'code-name (upstream if not given)'
+    required: false
   dist-name:
     description: 'distribution name  (upstream if not given)'
     required: false
@@ -45,6 +45,9 @@ inputs:
     description: 'iso name  (upstream if not given)'
     required: false
     default: 'nix'
+  dist-branding:
+    description: 'branding (upstream if not given)'
+    required: false
   custom-repo:
     description: 'name a custom repo to be prioritized above the default ones'
     required: false
@@ -239,6 +242,7 @@ runs:
         CODE_NAME: ${{ inputs.code-name }}
         ISO_NAME: ${{ inputs.iso-name }}
         DIST_NAME: ${{ inputs.dist-name }}
+        DIST_BRANDING: ${{ inputs.dist-branding }}
         DISABLE_MULTILIB: ${{ inputs.disable-multilib }}
         OFFICE: ${{ inputs.office-chooser }}
         BUILD_MIRROR: ${{ inputs.build-mirror }}
@@ -250,10 +254,12 @@ runs:
         # source the version info from current release info
         source <(curl -s https://gitlab.manjaro.org/packages/core/manjaro-release/-/raw/master/lsb-release)
 
-        sudo sed -i -e "s|dist_name=\$(get_distname)|dist_name=\"${DIST_NAME:-DISTRIB_ID%Linux}\"|g" /usr/lib/manjaro-tools/util.sh
-        sudo sed -i -e 's|iso_name=$(get_osid)|iso_name=\"${ISO_NAME:-manjaro}\"|g' /usr/lib/manjaro-tools/util.sh
-        sudo sed -i -e "s|dist_release=\$(get_release)|dist_release=\"${VERSION:-$DISTRIB_RELEASE}\"|g" /usr/lib/manjaro-tools/util.sh
-        sudo sed -i -e "s|dist_codename=\$(get_codename)|dist_codename=\"${CODE_NAME:-$DISTRIB_CODENAME}\"|g" /usr/lib/manjaro-tools/util.sh
+        echo  sed -i -e "s|dist_name=\$(get_distname)|dist_name=\"${DIST_NAME:-DISTRIB_ID%Linux}\"|g" /usr/lib/manjaro-tools/util.sh
+        echo  sed -i -e "s|iso_name=\$(get_osid)|iso_name=\"${ISO_NAME:-manjaro}\"|g" /usr/lib/manjaro-tools/util.sh
+        echo  sed -i -e "s|dist_release=\$(get_release)|dist_release=\"${VERSION:-$DISTRIB_RELEASE}\"|g" /usr/lib/manjaro-tools/util.sh
+        echo  sed -i -e "s|dist_codename=\$(get_codename)|dist_codename=\"${CODE_NAME:-$DISTRIB_CODENAME}\"|g" /usr/lib/manjaro-tools/util.sh
+        echo  sed -i -e "s|dist_branding=\"MANJARO\"|dist_branding=\"${DIST_BRANDING:-MANJARO}\"|g" /usr/lib/manjaro-tools/util.sh
+
         sudo sed -i -e "s|build_mirror='https://mirror.easyname.at/manjaro'|build_mirror=\'${BUILD_MIRROR}\'|g" /usr/lib/manjaro-tools/util.sh
         
         sudo buildiso ${SCOPE:+-f} -p $EDITION -b $BRANCH -k $KERNEL ${OFFICE:+-o} ${DISABLE_MULTILIB:+-n}
